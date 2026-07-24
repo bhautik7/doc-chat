@@ -10,6 +10,9 @@ from app.database.session import Base
 from app.models.user import User
 from app.models.document import Document
 
+from app.models.chat import ChatSession,Message
+
+
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
