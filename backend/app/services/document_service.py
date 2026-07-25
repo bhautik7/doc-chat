@@ -24,7 +24,7 @@ def create_document(db: Session, user_id: int, filename: str, file_bytes: bytes)
     db.add(document)
     db.commit()
     db.refresh(document)
-    process_document(db, document, file_bytes)
+    process_document(db, document, file_bytes)  
     return document
 
 def list_user_documents(db: Session, user_id: int) -> list[Document]:
