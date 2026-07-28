@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, type ReactNode } from "react";
 import apiClient from "../api/client";
+import { clearToken, getToken, setToken } from "../api/token";
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -11,9 +12,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [isAuthenticated, setIsAuthenticated] = useState(
-    !!localStorage.getItem("access_token")
-  );
+  const [isAuthenticated, setIsAuthenticated] = useState(!!getToken());
 
   const login = async (email: string, password: string) => {
     const formData = new URLSearchParams();
@@ -26,7 +25,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
     });
 
-    localStorage.setItem("access_token", response.data.access_token);
+    setToken(response.data.access_token);
     setIsAuthenticated(true);
   };
 
@@ -36,7 +35,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = () => {
-    localStorage.removeItem("access_token");
+    clearToken();
     setIsAuthenticated(false);
   };
 

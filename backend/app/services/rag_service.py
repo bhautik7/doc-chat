@@ -1,10 +1,8 @@
 import json
 from sqlalchemy.orm import Session
-from app.models.chat import ChatSession, Message
+from app.models.chat import Message
 from app.rag.retriever import retrieve_relevant_chunks
 from app.rag.llm import generate_answer
-from typing import Optional,List 
-
 from typing import List, Optional
 
 def ask_question(

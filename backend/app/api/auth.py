@@ -5,15 +5,14 @@ from app.database.session import get_db
 from app.schemas.user import UserCreate, UserResponse, Token
 from app.services.auth_service import register_user, authenticate_user
 from app.authentication.jwt_handler import create_access_token
+from app.utils.errors import http_error_on
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 def register(user_data: UserCreate, db: Session = Depends(get_db)):
-    try:
+    with http_error_on(ValueError, 400):
         return register_user(db, user_data)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
 
 @router.post("/login", response_model=Token)
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):

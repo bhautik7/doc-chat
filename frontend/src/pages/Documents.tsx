@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import type { ChangeEvent } from "react";
 import { Link } from "react-router-dom";
 import apiClient from "../api/client";
+import { getErrorMessage } from "../utils/errors";
 
 interface Doc {
   id: number;
@@ -43,8 +44,8 @@ export default function Documents() {
       });
 
       await fetchDocuments();
-    } catch (err: any) {
-      setError(err.response?.data?.detail || "Upload failed");
+    } catch (err) {
+      setError(getErrorMessage(err, "Upload failed"));
     } finally {
       setUploading(false);
       e.target.value = "";

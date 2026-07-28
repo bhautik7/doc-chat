@@ -4,9 +4,14 @@ from app.database.session import get_db
 from app.authentication.dependencies import get_current_user
 from app.models.user import User
 from app.schemas.document import DocumentResponse
-from app.services.document_service import create_document, list_user_documents, delete_document
+from app.services.document_service import (
+    create_document,
+    delete_document,
+    list_user_documents,
+    reprocess_document,
+)
+from app.utils.errors import http_error_on
 from app.utils.file_validation import FileValidationError
-from app.services.document_service import reprocess_document
 
 router = APIRouter(prefix="/documents", tags=["documents"])
 
@@ -17,10 +22,8 @@ async def upload_document(
     current_user: User = Depends(get_current_user),
 ):
     file_bytes = await file.read()
-    try:
+    with http_error_on(FileValidationError, 400):
         return create_document(db, current_user.id, file.filename, file_bytes)
-    except FileValidationError as e:
-        raise HTTPException(status_code=400, detail=str(e))
 
 @router.get("/", response_model=list[DocumentResponse])
 def get_documents(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
@@ -35,7 +38,5 @@ def remove_document(document_id: int, db: Session = Depends(get_db), current_use
 
 @router.post("/{document_id}/reprocess", response_model=DocumentResponse)
 def reprocess(document_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    try:
+    with http_error_on(ValueError, 404):
         return reprocess_document(db, current_user.id, document_id)
-    except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))

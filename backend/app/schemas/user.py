@@ -1,4 +1,6 @@
-from pydantic import BaseModel, EmailStr,field_validator
+from pydantic import BaseModel, EmailStr, field_validator
+
+from app.schemas.base import ORMModel
 
 class UserCreate(BaseModel):
     email: EmailStr
@@ -17,12 +19,9 @@ class UserLogin(BaseModel):
     email: EmailStr
     password: str
 
-class UserResponse(BaseModel):
+class UserResponse(ORMModel):
     id: int
     email: EmailStr
-
-    class Config:
-        from_attributes = True
 
 class Token(BaseModel):
     access_token: str
