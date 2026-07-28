@@ -10,6 +10,16 @@ interface Message {
   created_at: string;
 }
 
+function localMessage(role: Message["role"], content: string): Message {
+  return {
+    id: Date.now(),
+    role,
+    content,
+    sources: null,
+    created_at: "",
+  };
+}
+
 export default function Chat() {
   const [sessionId, setSessionId] = useState<number | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -45,16 +55,7 @@ export default function Chat() {
     setInput("");
     setLoading(true);
 
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: Date.now(),
-        role: "user",
-        content: question,
-        sources: null,
-        created_at: "",
-      },
-    ]);
+    setMessages((prev) => [...prev, localMessage("user", question)]);
 
     try {
       const res = await apiClient.post("/chat/ask", {
@@ -63,16 +64,10 @@ export default function Chat() {
       });
 
       setMessages((prev) => [...prev, res.data]);
-    } catch (err) {
+    } catch {
       setMessages((prev) => [
         ...prev,
-        {
-          id: Date.now(),
-          role: "assistant",
-          content: "Something went wrong. Please try again.",
-          sources: null,
-          created_at: "",
-        },
+        localMessage("assistant", "Something went wrong. Please try again."),
       ]);
     } finally {
       setLoading(false);
