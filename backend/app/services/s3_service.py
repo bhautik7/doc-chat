@@ -9,9 +9,8 @@ s3_client = boto3.client(
     aws_secret_access_key=settings.aws_secret_access_key,
 )
 
-def upload_file_to_s3(file_bytes: bytes, filename: str, user_id: int) -> str:
-    file_extension = filename.rsplit(".", 1)[-1]
-    s3_key = f"users/{user_id}/documents/{uuid.uuid4()}.{file_extension}"
+def upload_file_to_s3(file_bytes: bytes, file_type: str, user_id: int) -> str:
+    s3_key = f"users/{user_id}/documents/{uuid.uuid4()}.{file_type}"
     s3_client.put_object(
         Bucket=settings.s3_bucket_name,
         Key=s3_key,
