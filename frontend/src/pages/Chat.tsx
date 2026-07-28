@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import type { FormEvent } from "react";
-import apiClient from "../api/client";
+import apiClient, { getErrorMessage } from "../api/client";
 
 interface Message {
   id: number;
@@ -10,18 +10,37 @@ interface Message {
   created_at: string;
 }
 
+function countSources(sources: string | null): number {
+  if (!sources) {
+    return 0;
+  }
+
+  try {
+    const parsed = JSON.parse(sources);
+    return Array.isArray(parsed) ? parsed.length : 0;
+  } catch {
+    // Malformed source metadata must not take the whole chat view down.
+    return 0;
+  }
+}
+
 export default function Chat() {
   const [sessionId, setSessionId] = useState<number | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const initSession = async () => {
-      const res = await apiClient.post("/chat/sessions");
-      setSessionId(res.data.id);
+      try {
+        const res = await apiClient.post("/chat/sessions");
+        setSessionId(res.data.id);
+      } catch (err) {
+        setError(getErrorMessage(err, "Could not start a chat session"));
+      }
     };
 
     initSession();
@@ -44,6 +63,7 @@ export default function Chat() {
 
     setInput("");
     setLoading(true);
+    setError("");
 
     setMessages((prev) => [
       ...prev,
@@ -69,7 +89,7 @@ export default function Chat() {
         {
           id: Date.now(),
           role: "assistant",
-          content: "Something went wrong. Please try again.",
+          content: getErrorMessage(err, "Something went wrong. Please try again."),
           sources: null,
           created_at: "",
         },
@@ -99,9 +119,9 @@ export default function Chat() {
               {msg.content}
             </div>
 
-            {msg.sources && JSON.parse(msg.sources).length > 0 && (
+            {countSources(msg.sources) > 0 && (
               <div className="text-xs text-gray-500 mt-1">
-                Sources: {JSON.parse(msg.sources).length} document excerpt(s)
+                Sources: {countSources(msg.sources)} document excerpt(s)
               </div>
             )}
           </div>
@@ -110,6 +130,12 @@ export default function Chat() {
         {loading && (
           <p className="text-sm text-gray-400">
             Thinking...
+          </p>
+        )}
+
+        {error && (
+          <p className="text-sm text-red-600">
+            {error}
           </p>
         )}
 
@@ -126,7 +152,7 @@ export default function Chat() {
 
         <button
           type="submit"
-          disabled={loading}
+          disabled={loading || !sessionId}
           className="bg-blue-600 text-white px-4 rounded-md disabled:opacity-50"
         >
           Send

@@ -1,5 +1,11 @@
-from openai import OpenAI
+import logging
+
+from openai import OpenAI, OpenAIError
+
 from app.utils.config import settings
+from app.utils.exceptions import LLMError
+
+logger = logging.getLogger(__name__)
 
 client = OpenAI(api_key=settings.openai_api_key)
 
@@ -22,12 +28,21 @@ Question: {question}
 
 Answer the question using only the context above."""
 
-    response = client.chat.completions.create(
-        model="gpt-4o",
-        messages=[
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": user_prompt},
-        ],
-        temperature=0.2,
-    )
-    return response.choices[0].message.content
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": user_prompt},
+            ],
+            temperature=0.2,
+        )
+    except OpenAIError as exc:
+        logger.exception("Answer generation failed")
+        raise LLMError("Could not generate an answer right now") from exc
+
+    content = response.choices[0].message.content if response.choices else None
+    if not content:
+        logger.error("Answer generation returned an empty response")
+        raise LLMError("The model returned an empty answer")
+    return content

@@ -26,7 +26,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
     });
 
-    localStorage.setItem("access_token", response.data.access_token);
+    const token = response.data?.access_token;
+    if (!token) {
+      throw new Error("Login response did not contain an access token");
+    }
+
+    localStorage.setItem("access_token", token);
     setIsAuthenticated(true);
   };
 
