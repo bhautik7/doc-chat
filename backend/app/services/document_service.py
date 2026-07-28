@@ -1,21 +1,22 @@
 from sqlalchemy.orm import Session
 from app.models.document import Document
 from app.services.s3_service import upload_file_to_s3, delete_file_from_s3
-from app.utils.file_validation import validate_file, FileValidationError
+from app.utils.file_validation import validate_file, sanitize_filename, FileValidationError
 from app.rag.document_loader import extract_text
 from app.rag.text_cleaner import clean_text
 from app.rag.chunker import chunk_text
-from app.rag.vector_store import add_chunks_to_store
+from app.rag.vector_store import add_chunks_to_store, delete_document_chunks
 from app.services.s3_service import get_file_from_s3
 
 
 def create_document(db: Session, user_id: int, filename: str, file_bytes: bytes) -> Document:
-    file_type = validate_file(file_bytes, filename)   # raises FileValidationError if invalid
-    s3_key = upload_file_to_s3(file_bytes, filename, user_id)
+    safe_filename = sanitize_filename(filename)
+    file_type = validate_file(file_bytes, safe_filename)   # raises FileValidationError if invalid
+    s3_key = upload_file_to_s3(file_bytes, file_type, user_id)
 
     document = Document(
         owner_id=user_id,
-        filename=filename,
+        filename=safe_filename,
         file_type=file_type,
         file_size_bytes=len(file_bytes),
         s3_key=s3_key,
@@ -36,6 +37,7 @@ def delete_document(db: Session, user_id: int, document_id: int) -> bool:
     ).first()
     if not document:
         return False
+    delete_document_chunks(document.id, user_id)
     delete_file_from_s3(document.s3_key)
     db.delete(document)
     db.commit()

@@ -7,8 +7,24 @@ from app.schemas.document import DocumentResponse
 from app.services.document_service import create_document, list_user_documents, delete_document
 from app.utils.file_validation import FileValidationError
 from app.services.document_service import reprocess_document
+from app.utils.config import settings
 
 router = APIRouter(prefix="/documents", tags=["documents"])
+
+UPLOAD_CHUNK_SIZE = 1024 * 1024
+
+
+async def read_upload_within_limit(file: UploadFile, max_bytes: int) -> bytes:
+    """Read an upload into memory, aborting as soon as it exceeds max_bytes."""
+    buffer = bytearray()
+    while chunk := await file.read(UPLOAD_CHUNK_SIZE):
+        buffer.extend(chunk)
+        if len(buffer) > max_bytes:
+            raise HTTPException(
+                status_code=413,
+                detail=f"File exceeds {settings.max_upload_size_mb}MB limit",
+            )
+    return bytes(buffer)
 
 @router.post("/upload", response_model=DocumentResponse, status_code=201)
 async def upload_document(
@@ -16,7 +32,7 @@ async def upload_document(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    file_bytes = await file.read()
+    file_bytes = await read_upload_within_limit(file, settings.max_upload_size_bytes)
     try:
         return create_document(db, current_user.id, file.filename, file_bytes)
     except FileValidationError as e:
