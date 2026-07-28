@@ -1,3 +1,13 @@
+import os
+
+# Settings are read at import time, so provide defaults before importing the app.
+os.environ.setdefault("database_url", "sqlite:///:memory:")
+os.environ.setdefault("openai_api_key", "test-openai-key")
+os.environ.setdefault("jwt_secret_key", "test-jwt-secret")
+os.environ.setdefault("s3_bucket_name", "test-bucket")
+os.environ.setdefault("aws_access_key_id", "test-access-key")
+os.environ.setdefault("aws_secret_access_key", "test-secret-key")
+
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -54,3 +64,18 @@ def client(db_session):
     yield TestClient(app)
 
     app.dependency_overrides.clear()
+
+
+@pytest.fixture(scope="function")
+def auth_headers(client):
+    client.post("/auth/register", json={"email": "fixture@example.com", "password": "testpass123"})
+    res = client.post(
+        "/auth/login",
+        data={"username": "fixture@example.com", "password": "testpass123"},
+    )
+    return {"Authorization": f"Bearer {res.json()['access_token']}"}
+
+
+@pytest.fixture(scope="function")
+def current_user(db_session, auth_headers):
+    return db_session.query(User).filter(User.email == "fixture@example.com").first()
