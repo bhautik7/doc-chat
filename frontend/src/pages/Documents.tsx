@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import type { ChangeEvent } from "react";
 import { Link } from "react-router-dom";
-import apiClient from "../api/client";
+import apiClient, { getErrorMessage } from "../api/client";
 
 interface Doc {
   id: number;
@@ -22,7 +22,9 @@ export default function Documents() {
   };
 
   useEffect(() => {
-    fetchDocuments();
+    fetchDocuments().catch((err) => {
+      setError(getErrorMessage(err, "Could not load your documents"));
+    });
   }, []);
 
   const handleUpload = async (e: ChangeEvent<HTMLInputElement>) => {
@@ -43,8 +45,8 @@ export default function Documents() {
       });
 
       await fetchDocuments();
-    } catch (err: any) {
-      setError(err.response?.data?.detail || "Upload failed");
+    } catch (err) {
+      setError(getErrorMessage(err, "Upload failed"));
     } finally {
       setUploading(false);
       e.target.value = "";
@@ -52,8 +54,14 @@ export default function Documents() {
   };
 
   const handleDelete = async (id: number) => {
-    await apiClient.delete(`/documents/${id}`);
-    await fetchDocuments();
+    setError("");
+
+    try {
+      await apiClient.delete(`/documents/${id}`);
+      await fetchDocuments();
+    } catch (err) {
+      setError(getErrorMessage(err, "Could not delete the document"));
+    }
   };
 
   return (

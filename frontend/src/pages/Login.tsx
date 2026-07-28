@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { FormEvent } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { getErrorMessage } from "../api/client";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -20,8 +21,8 @@ export default function Login() {
     try {
       await login(email, password);
       navigate("/documents");
-    } catch (err: any) {
-      setError(err.response?.data?.detail || "Login failed");
+    } catch (err) {
+      setError(getErrorMessage(err, "Login failed"));
     } finally {
       setLoading(false);
     }

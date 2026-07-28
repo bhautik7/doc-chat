@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { FormEvent } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { getErrorMessage } from "../api/client";
 
 export default function Register() {
   const [email, setEmail] = useState("");
@@ -20,8 +21,8 @@ export default function Register() {
     try {
       await register(email, password);
       navigate("/documents");
-    } catch (err: any) {
-      setError(err.response?.data?.detail || "Registration failed");
+    } catch (err) {
+      setError(getErrorMessage(err, "Registration failed"));
     } finally {
       setLoading(false);
     }

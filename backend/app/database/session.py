@@ -20,6 +20,11 @@ def get_db():
         #
         # The route uses this database session while processing the request.
              yield db
+    except Exception:
+        # Roll back so a failed request never leaves a dirty session behind
+        # (a pooled connection with a half-applied transaction).
+        db.rollback()
+        raise
     finally:
         # This code runs after the request is completed.
         # FastAPI executes this even if the API throws an exception.

@@ -23,7 +23,11 @@ def ask_question(
     else:
         answer = generate_answer(question, context_chunks)
         sources = [
-            {"document_id": doc.metadata["document_id"], "chunk_index": doc.metadata["chunk_index"], "score": float(score)}
+            {
+                "document_id": doc.metadata.get("document_id"),
+                "chunk_index": doc.metadata.get("chunk_index"),
+                "score": float(score),
+            }
             for doc, score in results
         ]
 
